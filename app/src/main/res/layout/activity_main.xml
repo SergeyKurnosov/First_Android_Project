@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginTop="50dp"
+    android:orientation="vertical"
+
+    tools:context=".MainActivity">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="22dp"
+        android:id="@+id/rrr"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="73dp"
+            android:layout_height="wrap_content"
+            android:text="R" />
+
+        <SeekBar
+            android:id="@+id/seekBarR"
+            android:layout_width="192dp"
+            android:min="0"
+            android:max="255"
+            android:progress="100"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="26dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="73dp"
+            android:layout_height="wrap_content"
+            android:text="G" />
+
+        <SeekBar
+            android:id="@+id/seekBarG"
+            android:layout_width="192dp"
+            android:min="0"
+            android:max="255"
+            android:progress="100"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="312dp"
+        android:layout_height="32dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="73dp"
+            android:layout_height="wrap_content"
+            android:text="B"/>
+
+        <SeekBar
+            android:id="@+id/seekBarB"
+            android:layout_width="192dp"
+            android:min="0"
+            android:max="255"
+            android:progress="100"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+
+</LinearLayout>
