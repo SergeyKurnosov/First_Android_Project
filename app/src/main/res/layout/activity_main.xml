@@ -68,5 +68,17 @@
             android:layout_height="wrap_content" />
     </LinearLayout>
 
+    <EditText
+        android:id="@+id/url"
+        android:layout_width="301dp"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/go"
+        android:layout_width="match_parent"
+        android:layout_height="62dp"
+        android:text="go"/>
+
+
 
 </LinearLayout>
