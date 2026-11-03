@@ -1,84 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:layout_marginTop="50dp"
     android:orientation="vertical"
-
     tools:context=".MainActivity">
 
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="22dp"
-        android:id="@+id/rrr"
-        android:orientation="horizontal">
-
-        <TextView
-            android:layout_width="73dp"
-            android:layout_height="wrap_content"
-            android:text="R" />
-
-        <SeekBar
-            android:id="@+id/seekBarR"
-            android:layout_width="192dp"
-            android:min="0"
-            android:max="255"
-            android:progress="100"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="26dp"
-        android:orientation="horizontal">
-
-        <TextView
-            android:layout_width="73dp"
-            android:layout_height="wrap_content"
-            android:text="G" />
-
-        <SeekBar
-            android:id="@+id/seekBarG"
-            android:layout_width="192dp"
-            android:min="0"
-            android:max="255"
-            android:progress="100"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="312dp"
-        android:layout_height="32dp"
-        android:orientation="horizontal">
-
-        <TextView
-            android:layout_width="73dp"
-            android:layout_height="wrap_content"
-            android:text="B"/>
-
-        <SeekBar
-            android:id="@+id/seekBarB"
-            android:layout_width="192dp"
-            android:min="0"
-            android:max="255"
-            android:progress="100"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
-
     <EditText
-        android:id="@+id/url"
-        android:layout_width="301dp"
+        android:id="@+id/editText"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
     <Button
-        android:id="@+id/go"
+        android:id="@+id/ok"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/ok" />
+
+    <ListView
+        android:id="@+id/list"
         android:layout_width="match_parent"
-        android:layout_height="62dp"
-        android:text="go"/>
+        android:layout_height="wrap_content" />
 
 
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/list2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
 
 </LinearLayout>

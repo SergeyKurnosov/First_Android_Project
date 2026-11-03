@@ -9,153 +9,121 @@ import android.util.Patterns;
 import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.URLUtil;
+import android.widget.Adapter;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.textfield.TextInputLayout;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.List;
 
 /*
-1.Приложение-пользователь вводит URL и открывает его в браузере через неявный интент.
-*минимальная валидация URL → автоматическое добавление https:// при необходимости.
+Создайте Android-приложение, которое позволяет пользователю формировать список покупок. Используйте ListView с возможностью добавления и удаления элементов.
+📋 Требования:
+•	Создайте экран с полем ввода (EditText), кнопкой добавления и списком (ListView).
+•	При вводе текста и нажатии кнопки элемент должен добавляться в список.
+
+Создайте приложение, отображающее список контактов (имя, телефон, аватар). Используйте RecyclerView для отображения списка.
+📋 Требования:
+•	Создайте класс-модель Contact с полями: имя (String), телефон (String) и аватар (int, идентификатор ресурса изображения).
+•	Используйте RecyclerView.Adapter и кастомный ViewHolder для отображения данных.
+•	Реализуйте обработку кликов по элементам списка: при нажатии на контакт выводите Toast-сообщение с именем и телефоном выбранного контакта.
+
 
  */
 
 public class MainActivity extends AppCompatActivity {
-    SeekBar R_,G_,B_;
 
-    Button input;
-    EditText textInput;
+    EditText editText;
+    Button button;
+    ListView listView;
+    List<String> items;
 
-    int back;
+    ArrayList<Contact> contacts;
+    RecyclerView recyclerView;
+    ContactAdapter contactAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        R_ = findViewById(R.id.seekBarR);
-        G_ = findViewById(R.id.seekBarG);
-        B_ = findViewById(R.id.seekBarB);
+        editText = findViewById(R.id.editText);
+        button = findViewById(R.id.ok);
+        listView = findViewById(R.id.list);
+        items = new ArrayList<>();
+        contacts = new ArrayList<>();
+        initDate();
+        recyclerView = findViewById(R.id.list2);
 
-        input = findViewById(R.id.go);
-        textInput = findViewById(R.id.url);
-        input.setOnClickListener(new View.OnClickListener() {
+        ContactAdapter.OnStateClickListener onStateClickListener = new ContactAdapter.OnStateClickListener() {
+            @Override
+            public void onStateClick(Contact contact, int position) {
+                Toast.makeText(getApplicationContext(), contact.getName() + " / "+contact.getNumber(),
+                        Toast.LENGTH_SHORT).show();
+            }
+        };
+
+
+        contactAdapter = new ContactAdapter(MainActivity.this, contacts, onStateClickListener);
+       recyclerView.setAdapter(contactAdapter);
+        
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1 , items);
+        listView.setAdapter(adapter);
+
+        button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String url = textInput.getText().toString();
-
-                String resultURL = sanitizeAndValidateUrl(url);
-
-                if(resultURL!=null){
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(resultURL));
-                    startActivity(intent);
+                String text = String.valueOf(editText.getText());
+                if (!text.isEmpty()){
+                    editText.setText("");
+                    adapter.add(text);
                 }
-                else {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                    builder.setMessage("Url неправильна ?");
-                    builder.setTitle("Ошибка !");
-                    builder.setCancelable(false);
-
+            }
+        });
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                String forDelete = items.get(position);
+                if(!forDelete.isEmpty()){
+                    adapter.remove(forDelete);
+                    return true;
                 }
-
-
-            }
-        });
-//https://github.com/curadProgrammer/Java-Paint/blob/main/src/PaintGui.java
-
-        R_.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                setBackColor(progress, G_.getProgress(), B_.getProgress());
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-            }
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
+                return false;
             }
         });
 
-        G_.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                setBackColor(R_.getProgress(), progress, B_.getProgress());
-            }
 
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-            }
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
 
-            }
-        });
 
-        B_.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                setBackColor(R_.getProgress(), G_.getProgress(), progress);
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-            }
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
 
     }
 
-    public String sanitizeAndValidateUrl(String userInput){
-        if (userInput.isBlank()) {
-            return null;
-        }
-
-        String trimmedInput = userInput.trim();
-        if (!trimmedInput.startsWith("http://") &&
-                !trimmedInput.startsWith("https://")) {
-           trimmedInput = "https://"+trimmedInput;
-        }
-        String guessedUrl = URLUtil.guessUrl(trimmedInput);
-        boolean isValid = Patterns.WEB_URL.matcher(guessedUrl).matches() &&
-                (URLUtil.isHttpUrl(guessedUrl) || URLUtil.isHttpsUrl(guessedUrl));
-
-         if (isValid) {
-           return   guessedUrl;
-         }
-
-         else return  null;
+    private void initDate() {
+        contacts.add(new Contact("One","1234567890", R.drawable.ic_launcher_background));
+        contacts.add(new Contact("Two","2345678901", R.drawable.ic_launcher_foreground));
+        contacts.add(new Contact("Three","3456789012", R.drawable.ic_launcher_background));
+        contacts.add(new Contact("Four","4567890123", R.drawable.ic_launcher_foreground));
+        contacts.add(new Contact("Five","5678901234", R.drawable.ic_launcher_background));
+        contacts.add(new Contact("Six","6789012345", R.drawable.ic_launcher_foreground));
+        contacts.add(new Contact("Seven","7890123456", R.drawable.ic_launcher_background));
+        contacts.add(new Contact("Eight","8901234567", R.drawable.ic_launcher_foreground));
+        contacts.add(new Contact("Nine","9012345678", R.drawable.ic_launcher_background));
+        contacts.add(new Contact("Ten","0123456789", R.drawable.ic_launcher_foreground));
     }
-
-    void setBackColor(int red, int green, int blue){
-        int r = red;
-        int g = green;
-        int b = blue;
-        back = rgbToInt(r,g,b);
-
-        findViewById(R.id.main).setBackgroundColor(Color.rgb( r, g, b));
-    }
-
-    int clamp(int value, int min, int max) {
-        return Math.max(min, Math.min(max, value));
-    }
-
-    int rgbToInt(int red, int green, int blue) {
-        red = clamp(red, 0, 255);
-        green = clamp(green, 0, 255);
-        blue = clamp(blue, 0, 255);
-        return (red << 16) | (green << 8) | blue;
-    }
-
-
-
 }
+
+
+
+
+

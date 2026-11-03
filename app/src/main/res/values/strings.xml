@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">First_Android_Project</string>
-    <string name="hello">Привет</string>
+    <string name="ok" translatable="false">OK</string>
 </resources>
