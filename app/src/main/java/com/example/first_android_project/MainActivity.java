@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.util.Patterns;
 import android.view.KeyEvent;
 import android.view.View;
@@ -57,9 +58,11 @@ Log.d
      */
 
     EditText editText;
-    Button button;
+    Button button , start , stop;
     WebView webView;
     WebSettings webSettings;
+
+    Intent intent;
 
 
     @Override
@@ -68,8 +71,10 @@ Log.d
         setContentView(R.layout.activity_main);
         editText = findViewById(R.id.editText);
         button = findViewById(R.id.button);
+        start = findViewById(R.id.start);
+        stop = findViewById(R.id.stop);
         webView = findViewById(R.id.webview);
-
+        intent = new Intent(MainActivity.this , CounterService.class);
         webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webView.setWebViewClient(new WebViewClient());
@@ -100,6 +105,21 @@ Log.d
                     webView.loadUrl(text);
 
                 }
+            }
+        });
+
+        start.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                startService(intent);
+            }
+        });
+
+        stop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+               stopService(intent);
             }
         });
 
