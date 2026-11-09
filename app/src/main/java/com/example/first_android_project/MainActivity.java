@@ -1,125 +1,146 @@
 package com.example.first_android_project;
 
-import android.app.AlertDialog;
-import android.content.Intent;
-import android.graphics.Color;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.Patterns;
-import android.view.KeyEvent;
 import android.view.View;
-import android.webkit.URLUtil;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
-import android.widget.Adapter;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListView;
-import android.widget.SeekBar;
-import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.room.Room;
 
-import com.google.android.material.textfield.TextInputLayout;
-
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
-
 
 
 public class MainActivity extends AppCompatActivity {
 
     /*
-    Задача 1. WebView: мини-браузер
-Что сделать:
-На экране поле EditText, кнопка «Перейти» и WebView под ними.
-По нажатию на кнопку загружается адрес из поля (если ввёл без https://, дописать его в коде).
-Ссылки внутри страницы открываются в самом приложении, а не во внешнем браузере.
-Кнопка «Назад» идёт по истории WebView, а когда истории нет, закрывает приложение.
 
-2.Service: счётчик в Logcat
-Что сделать:
-Создать CounterService (started-сервис) и объявить его в манифесте.
-В onCreate, onStartCommand и onDestroy писать в лог (Log.d("SVC", ...)).
-После запуска сервис каждую секунду пишет в лог «Тик 1», «Тик 2», «Тик 3» и так далее.
-В MainActivity две кнопки: «Старт» (startService) и «Стоп» (stopService).
-После нажатия «Стоп» тики должны прекратиться.
-
-Log.d
 
      */
 
-    EditText editText;
-    Button button , start , stop;
-    WebView webView;
-    WebSettings webSettings;
+    Button btnAdd;
+    Button btnRead;
+    Button btnClear;
+    Button btnDelID;
 
-    Intent intent;
+    EditText etNAme;
+    EditText etEmail;
+    EditText etPhone;
+    EditText etDelID;
+
+
+    AppDataBAse db;
+    UserDao userDao;
+
+    ArrayList<User> userArrayList;
+    RecyclerView recyclerView;
+    UserAdapter userAdapter;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        editText = findViewById(R.id.editText);
-        button = findViewById(R.id.button);
-        start = findViewById(R.id.start);
-        stop = findViewById(R.id.stop);
-        webView = findViewById(R.id.webview);
-        intent = new Intent(MainActivity.this , CounterService.class);
-        webSettings = webView.getSettings();
-        webSettings.setJavaScriptEnabled(true);
-        webView.setWebViewClient(new WebViewClient());
+        btnAdd = findViewById(R.id.btnAdd);
+        btnRead = findViewById(R.id.btnRead);
+        btnClear = findViewById(R.id.btnClear);
+        btnDelID = findViewById(R.id.btnDelID);
+
+        etEmail = findViewById(R.id.etEmail);
+        etNAme = findViewById(R.id.etName);
+        etPhone= findViewById(R.id.etPhone);
+        etDelID= findViewById(R.id.etID);
+
+        userArrayList = new ArrayList<>();
+
+      //  users.add(new User("nnn", "eee", "123"));
 
 
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+        db = Room.databaseBuilder(getApplicationContext(), AppDataBAse.class, "myDB").addMigrations(AppDataBAse.MIGRATION_1_2).allowMainThreadQueries().build();
+        userDao = db.userDao();
+
+        List<User> users = userDao.getAll();
+        userArrayList.addAll(users);
+        recyclerView = findViewById(R.id.list2);
+
+        userAdapter = new UserAdapter(MainActivity.this , userArrayList);
+        recyclerView.setAdapter(userAdapter);
+
+     //   userAdapter.notifyDataSetChanged();
+
+        btnAdd.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void handleOnBackPressed() {
-                if(webView.canGoBack()){
-                    webView.goBack();
+            public void onClick(View v) {
+                String name = etNAme.getText().toString();
+                String email = etEmail.getText().toString();
+                String phone = etPhone.getText().toString();
+
+                User user = new User();
+                user.name = name;
+                user.email = email;
+                user.phone = phone;
+
+                long id = userDao.insert(user);
+
+                userArrayList.add(user);
+                userAdapter.notifyDataSetChanged();
+
+                Log.d("SQL", "Add user id " + id);
+                etNAme.setText("");
+                etEmail.setText("");
+                etPhone.setText("");
+            }
+        });
+
+        btnRead.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                List<User> users = userDao.getAll();
+                if (users.size() == 0) {
+                    Log.d("SQL", "Empty");
+                    return;
+                }
+                for (User user:
+                     users) {
+                    Log.d("SQL","ID "+user.id+" name "+user.name+" email + "+user.email+ " phone "+ user.phone);
+                }
+            }
+        });
+
+        btnClear.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                userArrayList.clear();
+                userAdapter.notifyDataSetChanged();
+                int count = userDao.clearAll();
+                userDao.reset();
+                Log.d("SQL","Delete rows count  "+count);
+            }
+        });
+
+        btnDelID.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String idText= etDelID.getText().toString();
+                if(idText.isEmpty()){
+                    Log.d("SQL","Enter id  ");
+                    return;
+                }
+                int id = Integer.parseInt(idText);
+                int deleteCount = userDao.deleteById(id);
+                User forDel =  userArrayList.stream().filter(u -> u.id == id).findFirst().get();
+                userArrayList.remove(forDel);
+                userAdapter.notifyDataSetChanged();
+                if(deleteCount>0){
+                    Log.d("SQL","Delete user with id   "+id);
                 }
                 else {
-                    setEnabled(false);
-                    getOnBackPressedDispatcher().onBackPressed();
+                    Log.d("SQL","User not found   "+id);
                 }
-            }
-        });
-
-
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String text = editText.getText().toString();
-                if(text.length()>5){
-                    if(!text.startsWith("https://")){
-                        text = "https://"+text;
-                    }
-                    webView.loadUrl(text);
-
-                }
-            }
-        });
-
-        start.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                startService(intent);
-            }
-        });
-
-        stop.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-               stopService(intent);
+                etDelID.setText("");
             }
         });
 
