@@ -15,8 +15,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.First_Android_Project">
 
-        <service android:name=".CounterService"
-            android:exported="false"/>
 
         <activity
             android:name=".MainActivity"
