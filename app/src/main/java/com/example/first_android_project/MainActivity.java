@@ -12,6 +12,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import java.io.IOException;
+
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -21,31 +25,25 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
-    /*
+    private EditText editText , editType;
+    private Button button;
+    private TextView textView;
 
-https://github.com/public-apis/public-apis // apis
+    // API-ключ DeepSeek
+    private static final String API_KEY = "sk-bd3d6422f39e4ca5a51c309f3ec82e38";
 
-{
-"coord":{"lon":37.6156,"lat":55.7522},
-    "weather":[{"id":804,"main":"Clouds","description":"пасмурно","icon":"04d"}],
-    "base":"stations",
-    "main":{"temp":3.27,"feels_like":0.6,"temp_min":3.15,"temp_max":4.65,"pressure":1013,"humidity":54,"sea_level":1013,"grnd_level":994},
-    "visibility":10000,
-    "wind":{"speed":2.79,"deg":171,"gust":6.43},
-    "clouds":{"all":90},
-    "dt":1794397904,
-    "sys":{"type":2,"id":2095214,"country":"RU","sunrise":1794372964,"sunset":1794403867},"timezone":10800,"id":524901,"name":"Москва",
-    "cod":200}
-     */
+    private final String BASE_URL = "https://api.deepseek.com/";
 
-    private final String API_KEY = "a7b76e3c606d48effb4e257c3ff96b01";
-    private final String BASE_URL = "https://api.openweathermap.org";
+    // Выбираем модель
+    // Для Pro достаточно заменить название на deepseek-v4-pro
+    private static final String MODEL = "deepseek-flash";
+    //private final String MODEL = "deepseek-v4-pro";
 
-EditText edCity;
-Button buttonWeather;
-TextView textWeather;
-WeatherApi weatherApi;
+    // Системная инструкция для нейросети
+    //   private final String SYSTEM_PROMPT = "Ты должен отвечать в стиле Ивана Грозного.Используй характерную для эпохи лексику но сохраняй понятность и точность ответов";
 
+    // Объект для работы с DeepSeek API
+    private DeepSeekApi api;
 
 
     @Override
@@ -53,81 +51,129 @@ WeatherApi weatherApi;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        edCity = findViewById(R.id.editCity);
-        buttonWeather = findViewById(R.id.buttonWeather);
-        textWeather = findViewById(R.id.textWeather);
+        editText = findViewById(R.id.editText);
+        editType = findViewById(R.id.editTextType);
+        button = findViewById(R.id.button);
+        textView = findViewById(R.id.textView);
+
+           HttpLoggingInterceptor logging =
+                new HttpLoggingInterceptor();
+
+
+        logging.redactHeader("Authorization");
+
+        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(logging)
+                .build();
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
+                .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
-        weatherApi = retrofit.create(WeatherApi.class);
+        api = retrofit.create(DeepSeekApi.class);
 
-        buttonWeather.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String city = edCity.getText().toString();
+        button.setOnClickListener(v->{
+            String userMessage = editText.getText()
+                    .toString()
+                    .trim();
 
-                if(city.isEmpty()){
-                    edCity.setText("Введите город");
-                    return;
+            String typeBot = editType.getText()
+                    .toString()
+                    .trim();
+
+            // Проверяем, что поле не пустое
+            if (userMessage.isEmpty()) {
+                editText.setError("Введите сообщение");
+                return;
+            }
+            if (typeBot.isEmpty()) {
+                editText.setError("Введите стиль бота");
+                return;
+            }
+
+            textView.setText("DeepSeek думает...");
+
+            // Блокируем кнопку на время запроса
+            button.setEnabled(false);
+
+            ChatRequest request = new ChatRequest(
+                    typeBot,
+                    userMessage
+            );
+
+            request.model = MODEL;
+
+            api.sendMessage(
+                    "Bearer " + API_KEY,
+                    request
+            ).enqueue(new Callback<ChatResponse>() {
+                @Override
+                public void onResponse(
+                        Call<ChatResponse> call,
+                        Response<ChatResponse> response) {
+
+                    // Разблокируем кнопку
+                    button.setEnabled(true);
+
+                    // Проверяем успешность ответа
+                    if (response.isSuccessful()
+                            && response.body() != null
+                            && response.body().choices != null
+                            && !response.body().choices.isEmpty()
+                            && response.body().choices.get(0).message != null) {
+
+                        // Получаем текст ответа
+                        String answer = response.body()
+                                .choices.get(0)
+                                .message.content;
+
+                        // Отображаем ответ в TextView
+                        if (answer != null && !answer.isEmpty()) {
+                            textView.setText(answer);
+                        } else {
+                            textView.setText("Сервер вернул пустой ответ");
+                        }
+
+                    } else {
+
+                        // Обрабатываем ошибку API
+                        String error = "Неизвестная ошибка";
+
+                        if (response.errorBody() != null) {
+                            try {
+                                error = response.errorBody().string();
+                            } catch (IOException e) {
+                                error = e.getMessage();
+                            }
+                        }
+
+                        // Показываем код HTTP-ошибки
+                        textView.setText(
+                                "Ошибка API: " + response.code()
+                                        + "\n" + error
+                        );
+                    }
                 }
-                textWeather.setText("Загрузка");
 
-                getWeather(city);
-            }
+                @Override
+                public void onFailure(
+                        Call<ChatResponse> call,
+                        Throwable t) {
+
+                    // Разблокируем кнопку
+                    button.setEnabled(true);
+
+                    // Показываем причину ошибки
+                    textView.setText(
+                            "Ошибка соединения: " + t.getMessage()
+                    );
+                }
+            });
         });
-
-    }
-
-    private void getWeather(String city) {
-    Call<JsonObject> call = weatherApi.getWeather(city, API_KEY,"metric","ru");
-
-    call.enqueue(new Callback<JsonObject>() {
-        @Override
-        public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-            if(response.isSuccessful()&&response.body()!=null){
-                JsonObject json = response.body();
-                String cityName = json.get("name").getAsString();
-                JsonObject main = json.getAsJsonObject("main");
-
-                double temp = main.get("temp").getAsDouble();
-                int humidity = main.get("humidity").getAsInt();
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //        Данные дополнительные  :
-                //"feels_like":0.6,"temp_min":3.15,"temp_max":4.65,"pressure":1013
-                double temp_feels_like =  main.get("feels_like").getAsDouble();
-                double temp_min =  main.get("temp_min").getAsDouble();
-                double temp_max =  main.get("temp_max").getAsDouble();
-                int pressure = main.get("pressure").getAsInt();
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                JsonArray weatherArray = json.getAsJsonArray("weather");
-                JsonObject weather = weatherArray.get(0).getAsJsonObject();
-                String description = weather.get("description").getAsString();
-                JsonObject wind = json.getAsJsonObject("wind");
-                double windSpeed = wind.get("speed").getAsDouble();
-
-                String result = "City "+cityName+
-                        "\nTemp "+temp+
-                        "\nTemp (feel) "+temp_feels_like+
-                        "\nTemp (min) "+temp_min+
-                        "\nTemp (max) "+temp_max+
-                        "\n Влажность "+humidity+
-                        "\n Давление (мм рт. ст.) "+pressure+
-                        "\nПогода "+description+
-                        "\nСкорость ветра "+ windSpeed;
-                textWeather.setText(result);
-            }else {
-                textWeather.setText("Ошибка сервера "+response.code());
-            }
-        }
-
-        @Override
-        public void onFailure(Call<JsonObject> call, Throwable throwable) {
-            textWeather.setText("Ошибка подключения  "+throwable.getMessage());
-        }
-    });
     }
 }
 
